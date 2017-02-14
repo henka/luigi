@@ -45,6 +45,14 @@ class TestRunQueryTaskDontFlattenResults(TestRunQueryTask):
     def flatten_results(self):
         return False
 
+class TestRunQueryTaskWithSchema(TestRunQueryTask):
+
+    @property
+    def schema(self):
+        return [
+            { "name" : "field1", "mode" : "nullable", "type" : "string" },
+            { "name" : "field2", "mode" : "nullable", "type" : "integer" }
+        ]
 
 class TestRunQueryTaskWithRequires(bigquery.BigQueryRunQueryTask):
     client = MagicMock()
@@ -225,3 +233,13 @@ class BigQueryTest(unittest.TestCase):
     def test_dont_flatten_results(self):
         task = TestRunQueryTaskDontFlattenResults(table='table3')
         self.assertFalse(task.flatten_results)
+
+    def test_run_query_with_schema(self):
+        task = TestRunQueryTaskWithSchema(table='table3')
+        task.client = MagicMock()
+        task.run()
+
+        (_, job), _ = task.client.run_job.call_args
+        schema = job['configuration']['query']['schema']['fields']
+
+        self.assertEqual(schema, task.schema)

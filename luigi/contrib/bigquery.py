@@ -553,6 +553,13 @@ class BigQueryRunQueryTask(MixinBigQueryBulkComplete, luigi.Task):
         return WriteDisposition.WRITE_TRUNCATE
 
     @property
+    def schema(self):
+        """Schema in the format defined at https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.load.schema.
+
+        If the value is falsy, it is omitted and inferred by BigQuery, which only works for AVRO and CSV inputs."""
+        return []
+
+    @property
     def create_disposition(self):
         """Whether to create the table or not. See :py:class:`CreateDisposition`"""
         return CreateDisposition.CREATE_IF_NEEDED
@@ -618,6 +625,9 @@ class BigQueryRunQueryTask(MixinBigQueryBulkComplete, luigi.Task):
                 }
             }
         }
+
+        if self.schema:
+            job['configuration']['query']['schema'] = {'fields': self.schema}
 
         bq_client.run_job(output.table.project_id, job, dataset=output.table.dataset)
 
